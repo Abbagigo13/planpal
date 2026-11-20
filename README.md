@@ -1,14 +1,40 @@
 # PlanPal
 
-React / Express / tRPC / Drizzle starter, adapted from the Sandbox web-db-user template.
+PlanPal is a human-backed AI concierge that turns everyday requests into real-world plans. The first experience is a budget-aware Saturday date-night planner that researches live options, pays for premium information through x402 on Celo, and returns a polished itinerary.
 
-- `pnpm dev`: development server; honors `PORT` (default 3000).
-- `pnpm build` / `pnpm start`: build and serve `dist/index.js` and `dist/public/`.
-- `pnpm db:migrate`: apply checked-in migrations. `pnpm db:push`: generate and apply new schema changes.
-- `pnpm check` / `pnpm test`: types and application tests.
+## Hackathon track
 
-Start with the Webdev skill's default-template guide. Platform login, storage, payments and service contracts live in its shared references; read the relevant capability before extending its helper.
+Primary target: **Self Agent ID: Verified Agent Payments**.
 
-`server/_core/publicConfig.ts` exposes only named public runtime values. Private keys stay server-side. The platform serves managed `/manus-storage/` assets; the application does not register a second proxy.
+PlanPal uses Self Agent ID to decide which agents may access premium live recommendations, and x402 to pay per request. Every project entry also needs ERC-8004. Applicable Celo transactions use the registered attribution tag:
 
-Platform configuration is readable and editable through `webdev.config`. Default settings are initial values, not enforced constraints. The agent may modify the files, commands and configuration or follow the flexible guide for another stack.
+```text
+celo_e667c914009d
+```
+
+## Current status
+
+The managed PlanPal web project is initialized with React/Express/tRPC/Drizzle and database support. The product foundation and compliance checklist are being built first. Live Celo transaction execution is disabled by default.
+
+## Safety and privacy
+
+- Never commit `.env` or private keys.
+- Use a dedicated low-balance wallet for demonstrations.
+- Do not store passport data or personal identity documents.
+- Keep `ENABLE_LIVE_CELO_TX=false` until the full wallet, Self, x402, ERC-8004, and attribution setup is reviewed.
+
+## Local development
+
+```bash
+pnpm dev
+```
+
+Useful checks:
+
+```bash
+pnpm check
+pnpm test
+pnpm build
+```
+
+See [plan.md](./plan.md) for the product/design and architecture plan and [TODO.md](./TODO.md) for the implementation checklist.

@@ -1,0 +1,47 @@
+# PlanPal Delivery Checklist
+
+## Project eligibility and compliance
+
+- [ ] Register and maintain a public GitHub repository for PlanPal.
+- [ ] Register the PlanPal agent with ERC-8004 before the submission deadline.
+- [ ] Configure attribution tag `celo_e667c914009d` in every applicable Celo transaction before the first transaction.
+- [ ] Register the x402 seller PayTo address if PlanPal operates a paid endpoint.
+- [ ] Keep counted activity on Celo mainnet; clearly label any testnet-only development references.
+- [ ] Register PlanPal with Self Agent ID for the Self Agent ID track.
+- [ ] Keep the agent key and all payment/provider credentials server-side.
+
+## Product experience
+
+- [ ] User can choose Date Night and enter location, date/time, budget, and vibe.
+- [ ] User sees a clear working timeline while PlanPal researches.
+- [ ] PlanPal returns a useful itinerary with times, activities, estimated costs, reasons, and links.
+- [ ] User can make the plan cheaper, more exciting, or replace an activity.
+- [ ] Mobile flow is designed for touch, not a squeezed desktop layout.
+- [ ] Loading, empty, success, verification failure, payment failure, and over-budget states are designed.
+- [ ] Technical trust/payment details are available without overwhelming the primary user flow.
+
+## Self Agent ID track behavior
+
+- [ ] Service verifies the Self-signed agent request rather than trusting an identity header alone.
+- [ ] Fresh human-backed agents receive premium live recommendations.
+- [ ] Unverified or stale agents are refused or given a clearly limited response.
+- [ ] Replay, timestamp, tampering, and missing-header failures are handled.
+- [ ] The UI shows proof status without exposing passport or personal identity data.
+
+## x402 payment behavior
+
+- [ ] A paid endpoint returns `402 Payment Required` with an explicit quote.
+- [ ] Agent checks the spending cap before signing.
+- [ ] Agent retries with the x402 payment authorization.
+- [ ] Service verifies and settles the payment before releasing paid data.
+- [ ] UI shows token, amount, status, settlement receipt, and transaction hash.
+- [ ] Over-cap, insufficient-balance, failed, and uncertain-settlement states do not blindly retry.
+
+## Real-world validation and submission
+
+- [ ] At least one independent user outside the team completes a real planning job.
+- [ ] The submission names the user/job without exposing private information.
+- [ ] Mainnet transaction hashes and agent identity links are documented.
+- [ ] README includes overview, architecture, Self integration, x402 integration, setup, API, FAQ, and known limitations.
+- [ ] Demo video shows the complete user journey and at least one rejected policy/payment case.
+- [ ] `pnpm check`, `pnpm test`, and `pnpm build` pass before submission.
