@@ -2,7 +2,6 @@
   "routes": [
     { "path": "/", "title": "PlanPal" },
     { "path": "/app", "title": "PlanPal App" },
-    { "path": "/app/plan/:id", "title": "PlanPal Itinerary" },
     { "path": "/docs", "title": "PlanPal Documentation" },
     { "path": "/docs/api", "title": "PlanPal API Reference" }
   ]
