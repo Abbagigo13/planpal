@@ -28,6 +28,15 @@
 - [ ] Replay, timestamp, tampering, and missing-header failures are handled.
 - [ ] The UI shows proof status without exposing passport or personal identity data.
 
+## Backend foundation
+
+- [x] Define Drizzle tables and a generated migration for plans, itinerary items, agent status snapshots, and payment receipts.
+- [x] Add typed tRPC procedures for creating, reading, and refining plans plus reading agent and payment status.
+- [x] Add a server-controlled demo policy: verified agents receive premium recommendations; stale, unverified, or missing agents receive a limited response.
+- [x] Keep simulated payment receipts explicitly marked as demo/non-live and include the configured Celo attribution tag.
+- [ ] Apply the reviewed migration to the managed database.
+- [ ] Connect the planner UI to the tRPC procedures and replace its local-only result state.
+
 ## x402 payment behavior
 
 - [ ] A paid endpoint returns `402 Payment Required` with an explicit quote.
