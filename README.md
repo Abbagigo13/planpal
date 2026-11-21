@@ -25,7 +25,7 @@ The managed PlanPal web project is initialized with React/Express/tRPC/Drizzle a
 
 ## Backend foundation
 
-The current server slice includes typed tRPC procedures under `plans`, `agent`, and `payments`. Plan creation evaluates a server-controlled demo Self Agent ID status, returns either a premium or limited itinerary, and records a simulated x402 receipt with the Celo attribution tag. The receipt is explicitly marked `provider: "demo"` and `liveTransaction: false` until the real Self and x402 adapters are reviewed.
+The current server slice includes typed tRPC procedures under `plans`, `agent`, and `payments`. The planner UI now calls `plans.create` and `plans.refine` directly: plan creation evaluates a server-controlled demo Self Agent ID status, returns either a premium or limited itinerary, and records a simulated x402 receipt with the Celo attribution tag. The receipt is explicitly marked `provider: "demo"` and `liveTransaction: false` until the real Self and x402 adapters are reviewed.
 
 The Drizzle migration in `drizzle/0001_late_warpath.sql` adds `plans`, `planItems`, `agentStatusSnapshots`, and `paymentReceipts`. Generate migrations with `pnpm drizzle-kit generate`; do not apply them to the shared database until the schema is reviewed.
 

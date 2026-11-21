@@ -35,7 +35,7 @@
 - [x] Add a server-controlled demo policy: verified agents receive premium recommendations; stale, unverified, or missing agents receive a limited response.
 - [x] Keep simulated payment receipts explicitly marked as demo/non-live and include the configured Celo attribution tag.
 - [ ] Apply the reviewed migration to the managed database.
-- [ ] Connect the planner UI to the tRPC procedures and replace its local-only result state.
+- [x] Connect the planner UI to the tRPC procedures and replace its local-only result state.
 
 ## x402 payment behavior
 

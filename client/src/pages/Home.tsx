@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
+import { trpc } from "@/lib/trpc";
 import {
   ArrowRight,
   BadgeCheck,
@@ -27,29 +28,41 @@ const missions = [
   { title: "Food crawl", note: "Follow the flavor trail", icon: Utensils, color: "gold" },
 ];
 
-const itinerary = [
-  { time: "18:30", title: "Sunset walk", place: "Tarkwa Bay viewpoint", detail: "A calm first stop to ease into the evening.", cost: "$0", icon: MapPin, tone: "lime" },
-  { time: "20:00", title: "Dinner with a view", place: "The Yellow Chilli", detail: "Warm Nigerian plates and an easy table for two.", cost: "$34", icon: Utensils, tone: "coral" },
-  { time: "21:45", title: "Live music", place: "The Harvest", detail: "A short walk for a little more sparkle.", cost: "$12", icon: Ticket, tone: "lavender" },
-];
+type PlannerResult = {
+  id: string;
+  status: "ready" | "limited";
+  accessTier: "premium" | "limited";
+  title: string;
+  totalCents: number;
+  items: Array<{ startTime: string; title: string; place: string; detail: string; costCents: number; link: string | null }>;
+  agent: { status: string; premiumEligible: boolean; note: string };
+  payment: { status: string; amountCents: number; token: string; transactionHash: string | null; liveTransaction: boolean; attributionTag: string };
+};
 
-function TrustReceipt() {
+function TrustReceipt({ plan }: { plan: PlannerResult }) {
   const [open, setOpen] = useState(false);
+  const verified = plan.agent.premiumEligible;
+  const paymentLabel = plan.payment.liveTransaction
+    ? `${(plan.payment.amountCents / 100).toFixed(2)} ${plan.payment.token} · settled on Celo`
+    : plan.payment.status === "skipped"
+      ? "Premium payment skipped"
+      : `${(plan.payment.amountCents / 100).toFixed(2)} ${plan.payment.token} · demo receipt`;
 
   return (
     <div className="trust-receipt">
       <button className="trust-summary" onClick={() => setOpen(!open)} aria-expanded={open}>
         <span className="trust-icon"><ShieldCheck size={18} /></span>
-        <span className="trust-copy"><strong>Human-backed agent</strong><small>Private identity · proof fresh</small></span>
-        <span className="trust-status"><span className="status-dot" /> Verified</span>
+        <span className="trust-copy"><strong>{verified ? "Human-backed agent" : "Limited agent access"}</strong><small>{verified ? "Private identity · proof fresh" : "Premium details are locked"}</small></span>
+        <span className="trust-status"><span className="status-dot" /> {verified ? "Verified" : "Limited"}</span>
         <ChevronDown size={17} className={open ? "rotate-180" : ""} />
       </button>
       {open && (
         <div className="trust-details">
-          <div><span>Self Agent ID</span><strong>Verified</strong></div>
-          <div><span>Payment</span><strong>$0.02 USDC · settled on Celo</strong></div>
+          <div><span>Self Agent ID</span><strong>{plan.agent.status}</strong></div>
+          <div><span>Payment</span><strong>{paymentLabel}</strong></div>
           <div><span>Your identity</span><strong>Never shared</strong></div>
-          <div><span>Receipt</span><code>0x7b4...92ad</code></div>
+          <div><span>Receipt</span><code>{plan.payment.transactionHash ?? "Not issued"}</code></div>
+          <div><span>Attribution</span><code>{plan.payment.attributionTag}</code></div>
         </div>
       )}
     </div>
@@ -63,30 +76,50 @@ function Planner() {
   const [vibe, setVibe] = useState("Relaxed & memorable");
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const [plan, setPlan] = useState<PlannerResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const createPlanMutation = trpc.plans.create.useMutation();
+  const refinePlanMutation = trpc.plans.refine.useMutation();
 
   const startPlanning = () => {
     setLoading(true);
-    window.setTimeout(() => {
-      setLoading(false);
-      setDone(true);
-    }, 1100);
+    setError(null);
+    createPlanMutation.mutate({
+      mission: "date_night",
+      location,
+      dateTime: "Saturday 18:30",
+      budgetCents: budget * 100,
+      vibe,
+    }, {
+      onSuccess: (result) => {
+        setPlan(result);
+        setLoading(false);
+        setDone(true);
+      },
+      onError: (cause) => {
+        setLoading(false);
+        setError(cause.message || "We couldn't build that plan. Try again.");
+      },
+    });
   };
 
-  if (done) {
+  if (done && plan) {
+    const resultIcons = [MapPin, Utensils, Ticket];
+    const resultTones = ["lime", "coral", "lavender"];
     return (
       <main className="planner-shell result-shell">
-        <div className="result-topline"><span className="eyebrow"><span className="status-dot" /> Plan ready</span><Link href="/">Start over</Link></div>
+        <div className="result-topline"><span className="eyebrow"><span className="status-dot" /> {plan.status === "ready" ? "Plan ready" : "Limited plan ready"}</span><Link href="/">Start over</Link></div>
         <section className="result-header">
-          <div><p className="eyebrow">Saturday · Lagos · 2 people</p><h1>A little more <em>memorable.</em></h1><p>We found a relaxed evening with good food, a view, and just enough room for a spontaneous encore.</p></div>
-          <div className="total-card"><span>Estimated total</span><strong>${budget - 6}</strong><small>within your ${budget} budget</small></div>
+          <div><p className="eyebrow">Saturday · {location} · 2 people</p><h1>{plan.title}</h1><p>{plan.agent.premiumEligible ? "We found a relaxed evening with good food, a view, and just enough room for a spontaneous encore." : "We found a gentle first step. Verify the agent to unlock the richer live recommendations."}</p></div>
+          <div className="total-card"><span>Estimated total</span><strong>${(plan.totalCents / 100).toFixed(0)}</strong><small>within your ${budget} budget</small></div>
         </section>
         <div className="result-grid">
           <section className="itinerary-card">
-            <div className="card-heading"><div><span className="eyebrow">Your plan</span><h2>Golden hour to goodnight</h2></div><button className="icon-button" aria-label="Share plan"><ArrowRight size={18} /></button></div>
-            <div className="timeline">{itinerary.map((item) => { const Icon = item.icon; return <div className="timeline-item" key={item.time}><div className="timeline-time">{item.time}</div><div className={`timeline-pin ${item.tone}`}><Icon size={17} /></div><div className="timeline-content"><div className="timeline-title"><div><h3>{item.title}</h3><span>{item.place}</span></div><strong>{item.cost}</strong></div><p>{item.detail}</p><button className="text-action">Swap this stop <ArrowRight size={14} /></button></div></div>; })}</div>
-            <div className="plan-actions"><button className="secondary-button">Make it cheaper</button><button className="secondary-button">Make it more exciting</button></div>
+            <div className="card-heading"><div><span className="eyebrow">Your plan</span><h2>{plan.title}</h2></div><button className="icon-button" aria-label="Share plan"><ArrowRight size={18} /></button></div>
+            <div className="timeline">{plan.items.map((item, index) => { const Icon = resultIcons[index % resultIcons.length]; return <div className="timeline-item" key={`${item.startTime}-${item.title}`}><div className="timeline-time">{item.startTime}</div><div className={`timeline-pin ${resultTones[index % resultTones.length]}`}><Icon size={17} /></div><div className="timeline-content"><div className="timeline-title"><div><h3>{item.title}</h3><span>{item.place}</span></div><strong>${(item.costCents / 100).toFixed(0)}</strong></div><p>{item.detail}</p><button className="text-action">Swap this stop <ArrowRight size={14} /></button></div></div>; })}</div>
+            <div className="plan-actions"><button className="secondary-button" disabled={refinePlanMutation.isPending} onClick={() => refinePlanMutation.mutate({ id: plan.id, change: "cheaper" }, { onSuccess: (next) => next && setPlan(next) })}>Make it cheaper</button><button className="secondary-button" disabled={refinePlanMutation.isPending} onClick={() => refinePlanMutation.mutate({ id: plan.id, change: "exciting" }, { onSuccess: (next) => next && setPlan(next) })}>Make it more exciting</button></div>
           </section>
-          <aside className="result-side"><TrustReceipt /><div className="side-card"><span className="eyebrow">Your preferences</span><div className="preference"><MapPin size={16} /><span>{location}</span></div><div className="preference"><CircleDollarSign size={16} /><span>Under ${budget} per person</span></div><div className="preference"><Sparkles size={16} /><span>{vibe}</span></div><button className="outline-button">Edit preferences</button></div></aside>
+          <aside className="result-side"><TrustReceipt plan={plan} /><div className="side-card"><span className="eyebrow">Your preferences</span><div className="preference"><MapPin size={16} /><span>{location}</span></div><div className="preference"><CircleDollarSign size={16} /><span>Under ${budget} per person</span></div><div className="preference"><Sparkles size={16} /><span>{vibe}</span></div><button className="outline-button">Edit preferences</button></div></aside>
         </div>
       </main>
     );
@@ -102,6 +135,7 @@ function Planner() {
           {step === 2 && <div className="form-step"><span className="step-icon coral"><CalendarDays size={24} /></span><p className="eyebrow">Make it yours</p><h1>What kind of evening are you picturing?</h1><p className="step-copy">No need to decide everything. We’ll fill in the thoughtful details.</p><label>What’s the vibe?<div className="chip-row">{["Relaxed & memorable", "Playful & social", "Low-key & cozy"].map((item) => <button className={`choice-chip ${vibe === item ? "selected" : ""}`} key={item} onClick={() => setVibe(item)}>{vibe === item && <Check size={15} />}{item}</button>)}</div></label><button className="primary-button" onClick={() => setStep(3)}>Continue <ArrowRight size={18} /></button></div>}
           {step === 3 && <div className="form-step"><span className="step-icon lavender"><WalletCards size={24} /></span><p className="eyebrow">One last thing</p><h1>What should we keep it under?</h1><p className="step-copy">PlanPal will keep every suggestion inside your comfort zone.</p><label>Budget per person<div className="budget-display"><strong>${budget}</strong><span>USD</span></div><input className="budget-range" type="range" min="25" max="150" step="5" value={budget} onChange={(e) => setBudget(Number(e.target.value))} /><div className="range-labels"><span>$25</span><span>$150</span></div></label><button className="primary-button" onClick={startPlanning}>Build my plan <Sparkles size={18} /></button></div>}
         </> : <div className="loading-step"><div className="loading-orb"><Sparkles size={26} /></div><p className="eyebrow">PlanPal is working</p><h1>Finding the right kind of <em>memorable.</em></h1><div className="activity-list"><div><Check size={16} /> Understanding your request</div><div><Check size={16} /> Searching live recommendations</div><div className="current"><span className="loading-dot" /> Checking your budget</div><div className="muted-activity">Building your itinerary</div></div></div>}
+        {error && <p className="planner-error" role="alert">{error}</p>}
       </section>
       {!loading && <p className="privacy-note"><ShieldCheck size={15} /> Your preferences stay private. PlanPal only pays for the live details it needs.</p>}
     </main>
