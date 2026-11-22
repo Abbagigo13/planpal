@@ -1,43 +1,71 @@
 # PlanPal
 
-PlanPal is a human-backed AI concierge that turns everyday requests into real-world plans. The first experience is a budget-aware Saturday date-night planner that researches live options, pays for premium information through x402 on Celo, and returns a polished itinerary.
+PlanPal is a human-backed AI concierge for plans worth leaving the house for. A user shares a place, time, budget, and mood; PlanPal turns that small idea into a practical itinerary with activities, timing, estimated costs, reasons, and easy refinement actions.
 
-## Hackathon track
+## What we are building
 
-Primary target: **Self Agent ID: Verified Agent Payments**.
+The first product is a budget-aware Saturday date-night planner. It is designed for people who want a memorable evening but do not want to spend an hour comparing maps, event pages, menus, and social posts. The experience starts with a warm three-step planner and ends with a timeline that feels ready to use.
 
-PlanPal uses Self Agent ID to decide which agents may access premium live recommendations, and x402 to pay per request. Every project entry also needs ERC-8004. Applicable Celo transactions use the registered attribution tag:
+Underneath the friendly interface is an accountable agent workflow. PlanPal checks whether a fresh human-backed agent is eligible for premium recommendations, pays only for the information it needs, and shows the user a compact trust and payment receipt. The technical details are available without making crypto knowledge a requirement.
+
+## Why we are building it
+
+Recommendation systems often optimize for more links rather than a better decision. PlanPal is built around the opposite outcome: help a person decide, leave the house, and have a good experience. The project also explores how autonomous agents can become more trustworthy when human-backed identity and per-request payment are treated as product behavior rather than hidden infrastructure.
+
+## Who PlanPal is for
+
+PlanPal serves everyday people planning date nights, weekend adventures, birthdays, and food crawls. It also serves agent operators who need to demonstrate a useful real-world job, premium information providers that want accountable agent traffic, and builders evaluating human-backed agent payments.
+
+## Current product status
+
+The landing page, responsive planner, documentation surface, backend procedures, database persistence, demo agent policy, and refinement flow are implemented. The planner UI calls typed tRPC procedures and stores plans, itinerary items, agent status snapshots, and payment receipts in the managed MySQL database.
+
+The current Self and x402 behavior is deliberately a safe demo adapter. Verified demo status returns a premium three-item plan; stale, unverified, or missing status returns a limited plan. Demo receipts are marked `provider: "demo"` and `liveTransaction: false`. No live wallet transaction, Self registration, x402 settlement, or ERC-8004 registration has been performed.
+
+## Hackathon direction
+
+PlanPal targets the **Self Agent ID: Verified Agent Payments** track. The project also plans to satisfy the ERC-8004 requirement. Applicable Celo transaction construction uses the registered attribution tag:
 
 ```text
 celo_e667c914009d
 ```
 
-## Current status
+The Celo target is mainnet, chain ID `42220`. Live transaction execution remains disabled with:
 
-The managed PlanPal web project is initialized with React/Express/tRPC/Drizzle and database support. The product foundation and compliance checklist are being built first. Live Celo transaction execution is disabled by default.
+```text
+ENABLE_LIVE_CELO_TX=false
+```
 
-## Safety and privacy
+## Project documentation
 
-- Never commit `.env` or private keys.
-- Use a dedicated low-balance wallet for demonstrations.
-- Do not store passport data or personal identity documents.
-- Keep `ENABLE_LIVE_CELO_TX=false` until the full wallet, Self, x402, ERC-8004, and attribution setup is reviewed.
+The complete documentation index is in [`docs/README.md`](./docs/README.md).
 
-## Backend foundation
+| Document | Purpose |
+|---|---|
+| [PRD](./docs/PRD.md) | Product problem, users, goals, requirements, and acceptance criteria |
+| [DESIGN](./docs/DESIGN.md) | Visual identity, layout, interaction, states, and mobile behavior |
+| [ARCHITECTURE](./docs/ARCHITECTURE.md) | Frontend, server, policy, payment, and persistence boundaries |
+| [DATABASE](./docs/DATABASE.md) | Tables, privacy rules, money representation, and migrations |
+| [API](./docs/API.md) | Typed tRPC procedures, inputs, outputs, and errors |
+| [AGENTS](./docs/AGENTS.md) | Agent policy, human-backed identity, payment, and privacy contract |
+| [Project Implementation](./docs/PROJECT_IMPLEMENTATION.md) | Current stack, delivered slices, and next implementation phases |
+| [Setup](./docs/SETUP.md) | Installation, environment, demo modes, migrations, and checks |
+| [Feature Development](./docs/FEATURE_DEVELOPMENT.md) | How to add missions, providers, server behavior, and UI features |
+| [Authentication & Security](./docs/AUTHENTICATION_SECURITY.md) | Sessions, secrets, identity validation, payment safety, and data minimization |
+| [MCP Connection](./docs/MCP_CONNECTION.md) | Secure external-provider boundary and connection pattern |
+| [Integrations](./docs/INTEGRATIONS.md) | Self Agent ID, x402, Celo, ERC-8004, and recommendation providers |
+| [Testing](./docs/TESTING.md) | Automated checks, database verification, manual QA, and launch validation |
 
-The current server slice includes typed tRPC procedures under `plans`, `agent`, and `payments`. The planner UI now calls `plans.create` and `plans.refine` directly: plan creation evaluates a server-controlled demo Self Agent ID status, returns either a premium or limited itinerary, and records a simulated x402 receipt with the Celo attribution tag. The receipt is explicitly marked `provider: "demo"` and `liveTransaction: false` until the real Self and x402 adapters are reviewed.
-
-The Drizzle migration in `drizzle/0001_late_warpath.sql` adds `plans`, `planItems`, `agentStatusSnapshots`, and `paymentReceipts`. It has been reviewed and applied to the managed database. Generate future migrations with `pnpm drizzle-kit generate` and review them before applying.
-
-For local demo policy states, set `PLANPAL_DEMO_AGENT_STATUS` to `verified`, `stale`, `unverified`, or `missing`. The client cannot assert its own verification status.
+The original implementation and design plan remains in [`plan.md`](./plan.md), and the active delivery checklist is in [`TODO.md`](./TODO.md).
 
 ## Local development
 
 ```bash
+pnpm install
 pnpm dev
 ```
 
-Useful checks:
+Run the standard validation suite:
 
 ```bash
 pnpm check
@@ -45,4 +73,19 @@ pnpm test
 pnpm build
 ```
 
-See [plan.md](./plan.md) for the product/design and architecture plan and [TODO.md](./TODO.md) for the implementation checklist.
+For demo policy states:
+
+```bash
+PLANPAL_DEMO_AGENT_STATUS=verified pnpm dev
+PLANPAL_DEMO_AGENT_STATUS=stale pnpm dev
+```
+
+## Safety and privacy
+
+Never commit `.env`, wallet private keys, seed phrases, or provider credentials. Do not store passports or personal identity documents. Keep credentials server-side and use secure project configuration. Use a dedicated low-balance wallet for any future demonstration. Do not enable live Celo transactions until the wallet, Self, x402, ERC-8004, attribution, spending cap, and uncertain-settlement behavior have been reviewed together.
+
+## Recent checkpoints
+
+- `c13c9bd` — recorded the reviewed database migration and persistence verification.
+- `64ea149` — connected the planner UI to backend procedures.
+- `52258ab` — added the guarded backend foundation.
