@@ -27,7 +27,7 @@ export const appRouter = router({
         budgetCents: z.number().int().min(2500).max(100000),
         vibe: z.string().trim().min(2).max(120),
       }))
-      .mutation(({ input, ctx }) => createPlan(input, ctx.user?.id)),
+      .mutation(({ input, ctx }) => createPlan(input, ctx.user?.id, ctx.req)),
     get: publicProcedure
       .input(z.object({ id: z.string().uuid() }))
       .query(({ input }) => getPlan(input.id)),
@@ -36,7 +36,7 @@ export const appRouter = router({
       .mutation(({ input }) => refinePlan(input.id, input.change)),
   }),
   agent: router({
-    status: publicProcedure.query(() => getCurrentAgentStatus()),
+    status: publicProcedure.query(({ ctx }) => getCurrentAgentStatus(ctx.req)),
   }),
   payments: router({
     get: publicProcedure

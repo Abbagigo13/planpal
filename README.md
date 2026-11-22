@@ -20,7 +20,7 @@ PlanPal serves everyday people planning date nights, weekend adventures, birthda
 
 The landing page, responsive planner, documentation surface, backend procedures, database persistence, demo agent policy, and refinement flow are implemented. The planner UI calls typed tRPC procedures and stores plans, itinerary items, agent status snapshots, and payment receipts in the managed MySQL database.
 
-The current Self and x402 behavior is deliberately a safe demo adapter. Verified demo status returns a premium three-item plan; stale, unverified, or missing status returns a limited plan. Demo receipts are marked `provider: "demo"` and `liveTransaction: false`. No live wallet transaction, Self registration, x402 settlement, or ERC-8004 registration has been performed.
+The current Self and x402 integrations are implemented behind explicit safety gates. Demo mode remains the default. Self mode can read the configured PlanPal agent from the Self registry or verify signed inbound requests, while x402 can construct and verify a Celo USDC payment and settle through the hosted facilitator. `ENABLE_LIVE_CELO_TX=false` keeps the live path disabled, so the normal prototype still returns receipts marked `provider: "demo"` and `liveTransaction: false`. Self registration, live x402 settlement, and ERC-8004 registration have not yet been completed.
 
 ## Hackathon direction
 

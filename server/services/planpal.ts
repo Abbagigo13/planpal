@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { getDb } from "../db";
 import { agentStatusSnapshots, paymentReceipts, planItems, plans } from "../../drizzle/schema";
-import { verifySelfAgentRequest, type AgentPolicyResult } from "./agent-policy";
+import { verifySelfAgentRequest, type AgentPolicyResult, type AgentRequest } from "./agent-policy";
 import { buildCeloPaymentRequest, settleCeloPayment, type X402Receipt } from "./x402";
 
 export type PlanInput = {
@@ -134,13 +134,15 @@ async function persistRefinement(result: PlanResult) {
   }
 }
 
-export async function createPlan(input: PlanInput, ownerUserId?: number): Promise<PlanResult> {
+export async function createPlan(input: PlanInput, ownerUserId?: number, request?: AgentRequest): Promise<PlanResult> {
   const id = crypto.randomUUID();
-  const agent = verifySelfAgentRequest();
-  const premium = agent.premiumEligible;
+  const agent = await verifySelfAgentRequest(request);
+  const payment = agent.premiumEligible
+    ? await settleCeloPayment(id, buildCeloPaymentRequest(id))
+    : makeLimitedPayment();
+  const premium = agent.premiumEligible && payment.status === "settled";
   const items = makeItinerary(input, premium);
   const totalCents = items.reduce((sum, item) => sum + item.costCents, 0);
-  const payment = premium ? settleCeloPayment(id, buildCeloPaymentRequest(id)) : makeLimitedPayment();
   const result: PlanResult = {
     ...input,
     id,
@@ -242,6 +244,6 @@ export async function refinePlan(id: string, change: "cheaper" | "exciting"): Pr
   return updated;
 }
 
-export function getCurrentAgentStatus() {
-  return verifySelfAgentRequest();
+export function getCurrentAgentStatus(request?: AgentRequest) {
+  return verifySelfAgentRequest(request);
 }
