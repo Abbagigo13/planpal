@@ -27,6 +27,7 @@ CELO_ATTRIBUTION_TAG=celo_e667c914009d
 SELF_AGENT_NETWORK=testnet
 CELO_TESTNET_RPC_URL=https://forno.celo-sepolia.celo-testnet.org
 PLANPAL_AGENT_POLICY_MODE=demo
+PLANPAL_SELF_REGISTRATION_ENABLED=false
 X402_FACILITATOR_URL=https://api.x402.celo.org
 X402_MAX_AMOUNT_USDC=0.05
 ENABLE_LIVE_CELO_TX=false
@@ -40,16 +41,16 @@ The protected project values are:
 
 Configure protected values through secure project configuration. Do not paste them into source files, shell history, or chat. Do not use a personal seed phrase.
 
-## Self Agent ID staging
+## Self Agent ID registration and staging
 
-1. Keep `SELF_AGENT_NETWORK=testnet` and use Celo Sepolia.
-2. Register the dedicated agent with Self using the official SDK/CLI and complete the QR handoff in the Self app.
-3. Store the exported agent key as the protected `AGENT_PRIVATE_KEY` value.
-4. Set `PLANPAL_AGENT_POLICY_MODE=self`.
-5. Call the planner or `agent.status` and confirm the result is `source: "self_agent_id"`, `status: "verified"`, and `premiumEligible: true`.
+1. Real passports and ID cards belong on Celo mainnet. Celo Sepolia accepts mock passports only.
+2. For the existing PlanPal key, temporarily set `SELF_AGENT_NETWORK=mainnet`, `PLANPAL_AGENT_POLICY_MODE=self`, and `PLANPAL_SELF_REGISTRATION_ENABLED=true` through managed runtime configuration.
+3. Open the guarded `agent.registrationLink` procedure. It returns a Self deep link built from the existing key’s signed registration challenge; it never returns the private key.
+4. Scan or open the link in the Self app and approve the registration with the real verified document. This mints the Self Agent ID binding for the current PlanPal key.
+5. Set `PLANPAL_SELF_REGISTRATION_ENABLED=false`, call `agent.status`, and confirm `source: "self_agent_id"`, `status: "verified"`, and `premiumEligible: true`.
 6. If registration is missing, stale, or the registry cannot be reached, PlanPal intentionally returns limited recommendations.
 
-Move to `SELF_AGENT_NETWORK=mainnet` only after the testnet flow is independently validated and the mainnet wallet and identity requirements are reviewed.
+Use `SELF_AGENT_NETWORK=testnet` only for a separate mock-passport validation path. Do not replace the current `AGENT_PRIVATE_KEY` with a newly generated Self key unless the x402 buyer-wallet implications are reviewed.
 
 ## x402 staging
 

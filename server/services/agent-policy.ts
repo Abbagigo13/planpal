@@ -1,5 +1,14 @@
 import { randomUUID } from "node:crypto";
-import { SelfAgent, SelfAgentVerifier } from "@selfxyz/agent-sdk";
+import {
+  CHAIN_IDS,
+  NETWORKS,
+  SelfAgent,
+  SelfAgentVerifier,
+  buildWalletFreeRegisterUserDataAscii,
+  signRegistrationChallenge,
+} from "@selfxyz/agent-sdk";
+import { getUniversalLink, SelfAppBuilder } from "@selfxyz/qrcode";
+import { createPublicClient, http, parseAbi } from "viem";
 
 export type VerificationStatus = "verified" | "unverified" | "stale" | "missing";
 
@@ -22,6 +31,16 @@ export type AgentRequest = {
   headers: Record<string, string | string[] | undefined>;
 };
 
+export type SelfRegistrationLink = {
+  network: SelfNetwork;
+  chainId: number;
+  registryAddress: string;
+  agentAddress: string;
+  nonce: string;
+  mode: "wallet-free-existing-key";
+  scanUrl: string;
+};
+
 type SelfNetwork = "mainnet" | "testnet";
 
 function getSelfNetwork(): SelfNetwork {
@@ -31,6 +50,69 @@ function getSelfNetwork(): SelfNetwork {
 function getSelfRpcUrl(network: SelfNetwork) {
   if (network === "mainnet") return process.env.CELO_RPC_URL ?? "https://forno.celo.org";
   return process.env.CELO_TESTNET_RPC_URL ?? "https://forno.celo-sepolia.celo-testnet.org";
+}
+
+/**
+ * Build a Self app link for the human to scan. This is deliberately opt-in:
+ * scanning the link starts a real Self registration flow for the configured
+ * agent key. The private key is used only in this server process to sign the
+ * registration challenge and is never included in the returned payload.
+ */
+export async function buildSelfRegistrationLink(): Promise<SelfRegistrationLink> {
+  if (process.env.PLANPAL_SELF_REGISTRATION_ENABLED !== "true") {
+    throw new Error("Self registration flow is disabled.");
+  }
+
+  const privateKey = process.env.AGENT_PRIVATE_KEY ?? process.env.SELF_AGENT_PRIVATE_KEY;
+  if (!privateKey) throw new Error("AGENT_PRIVATE_KEY is not configured.");
+
+  const network = getSelfNetwork();
+  const networkConfig = NETWORKS[network];
+  const agent = new SelfAgent({ privateKey, network, rpcUrl: getSelfRpcUrl(network) });
+  const info = await agent.getInfo();
+  if (info.agentId > 0n) {
+    throw new Error("The configured Self agent is already registered; use proof refresh instead.");
+  }
+
+  const publicClient = createPublicClient({ transport: http(networkConfig.rpcUrl) });
+  const nonce = await publicClient.readContract({
+    address: networkConfig.registryAddress as `0x${string}`,
+    abi: parseAbi(["function agentNonces(address) view returns (uint256)"]),
+    functionName: "agentNonces",
+    args: [agent.address as `0x${string}`],
+  });
+  const signed = await signRegistrationChallenge(privateKey, {
+    humanIdentifier: agent.address,
+    chainId: CHAIN_IDS[network],
+    registryAddress: networkConfig.registryAddress,
+    nonce,
+  });
+  const userDefinedData = buildWalletFreeRegisterUserDataAscii({
+    agentAddress: agent.address,
+    signature: { r: signed.r, s: signed.s, v: signed.v },
+    disclosures: { minimumAge: 0, ofac: false },
+  });
+  const selfApp = new SelfAppBuilder({
+    version: 2,
+    appName: "PlanPal",
+    scope: "planpal-agent-id",
+    endpoint: networkConfig.registryAddress,
+    endpointType: network === "mainnet" ? "celo" : "staging_celo",
+    userId: agent.address,
+    userIdType: "hex",
+    userDefinedData,
+    disclosures: { minimumAge: 0, ofac: false },
+  }).build();
+
+  return {
+    network,
+    chainId: CHAIN_IDS[network],
+    registryAddress: networkConfig.registryAddress,
+    agentAddress: agent.address,
+    nonce: nonce.toString(),
+    mode: "wallet-free-existing-key",
+    scanUrl: getUniversalLink(selfApp),
+  };
 }
 
 function headerValue(request: AgentRequest | undefined, name: string) {
