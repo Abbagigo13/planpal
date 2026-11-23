@@ -28,7 +28,9 @@ The PlanPal x402 flow uses Celo's hosted facilitator. Current Celo x402 document
 
 ## ERC-8004
 
-ERC-8004 registration is required by the hackathon for every entry. PlanPal still needs to publish a reviewed registration file, register the agent on the Celo identity registry, read the `Registered` event for the actual agent ID, and update the registration file with the resulting `registrations` entry. Self Agent ID's registry and the reference ERC-8004 registries are separate deployments; the final submission must document which identity is being used.
+ERC-8004 registration is required by the hackathon for every entry. A non-published draft is in [`ERC8004_REGISTRATION.DRAFT.json`](./ERC8004_REGISTRATION.DRAFT.json). It intentionally has an empty `registrations` array because the final agent ID does not exist yet; the public endpoint and wallet still require review.
+
+The Celo mainnet Identity Registry is `0x8004A169FB4a3325136EB29fA0ceB6D2e539a432`. The safe sequence is: publish the reviewed file at a stable HTTPS or IPFS URI, simulate `register(agentURI)`, review the exact transaction and fee currency, submit only after explicit approval, read the `Registered` event from the mined receipt, then update the file with the resulting `agentId` and `agentRegistry` entry. If the URI changes after that update, call `setAgentURI` so the on-chain URI and file remain aligned. Self Agent ID's registry and ERC-8004's identity registry are separate deployments; the final submission must document both identities.
 
 ## Recommendation providers
 
@@ -41,3 +43,4 @@ Live place/event data remains behind an adapter boundary. A provider should retu
 - [Celo x402 guide](https://docs.celo.org/build/agents/x402)
 - [Celo ERC-8004 guide](https://docs.celo.org/build/agents/8004)
 - [ERC-8004 specification](https://eips.ethereum.org/EIPS/eip-8004)
+- [Celo attribution-tag builder guide](https://github.com/celo-org/attribution-tags/blob/main/BUILDERS.md)

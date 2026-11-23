@@ -54,6 +54,7 @@ The complete documentation index is in [`docs/README.md`](./docs/README.md).
 | [Authentication & Security](./docs/AUTHENTICATION_SECURITY.md) | Sessions, secrets, identity validation, payment safety, and data minimization |
 | [MCP Connection](./docs/MCP_CONNECTION.md) | Secure external-provider boundary and connection pattern |
 | [Integrations](./docs/INTEGRATIONS.md) | Self Agent ID, x402, Celo, ERC-8004, and recommendation providers |
+| [ERC-8004 registration draft](./docs/ERC8004_REGISTRATION.DRAFT.json) | Reviewed metadata draft; not published or registered yet |
 | [Testing](./docs/TESTING.md) | Automated checks, database verification, manual QA, and launch validation |
 
 The original implementation and design plan remains in [`plan.md`](./plan.md), and the active delivery checklist is in [`TODO.md`](./TODO.md).
@@ -86,6 +87,7 @@ Never commit `.env`, wallet private keys, seed phrases, or provider credentials.
 
 ## Recent checkpoints
 
+- `e75961a` — wired guarded Self Agent ID and Celo x402 adapters; live settlement remains disabled.
 - `c13c9bd` — recorded the reviewed database migration and persistence verification.
 - `64ea149` — connected the planner UI to backend procedures.
 - `52258ab` — added the guarded backend foundation.

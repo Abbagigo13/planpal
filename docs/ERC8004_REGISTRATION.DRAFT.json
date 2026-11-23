@@ -1,0 +1,20 @@
+{
+  "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+  "name": "PlanPal",
+  "description": "PlanPal is a human-backed AI concierge for budget-aware Saturday date-night plans. It turns a place, time, budget, and mood into a practical itinerary with timing, estimated costs, and easy refinements. Premium recommendation context is available only after the requesting agent passes Self Agent ID policy and a Celo x402 USDC payment settles; otherwise PlanPal returns a limited plan.",
+  "image": "https://files.manuscdn.com/user_upload_by_module/session_file/310519664093161328/IbjGuGvJKyPgMtwK.svg",
+  "services": [
+    {
+      "name": "web",
+      "endpoint": "https://planpal.app/"
+    },
+    {
+      "name": "API",
+      "endpoint": "https://planpal.app/api/trpc"
+    }
+  ],
+  "x402Support": true,
+  "active": true,
+  "supportedTrust": ["reputation"],
+  "registrations": []
+}

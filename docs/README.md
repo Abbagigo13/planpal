@@ -12,4 +12,5 @@
 - [Authentication & Security](./AUTHENTICATION_SECURITY.md) — sessions, secrets, identity, payments, and data minimization.
 - [MCP Connection](./MCP_CONNECTION.md) — provider boundary and secure connection pattern.
 - [Integrations](./INTEGRATIONS.md) — Self, x402, Celo, ERC-8004, and recommendations.
+- [ERC-8004 registration draft](./ERC8004_REGISTRATION.DRAFT.json) — reviewed metadata draft; not published or registered yet.
 - [Testing](./TESTING.md) — automated, database, manual, and pre-launch validation.
