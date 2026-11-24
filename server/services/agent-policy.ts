@@ -95,7 +95,7 @@ export async function buildSelfRegistrationLink(): Promise<SelfRegistrationLink>
   const selfApp = new SelfAppBuilder({
     version: 2,
     appName: "PlanPal",
-    scope: "planpal-agent-id",
+    scope: "self-agent-id",
     endpoint: networkConfig.registryAddress,
     endpointType: network === "mainnet" ? "celo" : "staging_celo",
     userId: agent.address,
