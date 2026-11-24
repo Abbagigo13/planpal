@@ -18,6 +18,21 @@ pnpm dev
 
 The development server runs on port 3000 through the managed runtime.
 
+## Vercel deployment
+
+PlanPal can run as one Vercel project. The Vite frontend is published from `dist/public`, while `api/index.ts` exposes the Express health, OAuth, and tRPC routes as a Vercel serverless function. `vercel.json` routes `/api/*` to that function and leaves the browser-facing pages on the static frontend.
+
+In Vercel, import the public GitHub repository, keep the repository root as the project root, and use the committed `vercel.json` settings. Add the protected runtime values through Vercel Environment Variables rather than committing them. For the first deployment, keep `PLANPAL_AGENT_POLICY_MODE=demo`, `PLANPAL_SELF_REGISTRATION_ENABLED=false`, and `ENABLE_LIVE_CELO_TX=false`.
+
+After deployment, verify both layers:
+
+```bash
+curl https://YOUR-DOMAIN.example/api/health
+# {"status":"ok"}
+```
+
+Then open `/app` and create a demo plan. A working homepage alone is not sufficient; a Vercel deployment is complete only when `/api/health` and the tRPC routes respond successfully.
+
 ## Environment
 
 Start from `.env.example`. Public and non-secret staged values include:
