@@ -4,10 +4,11 @@
 
 - [ ] Register and maintain a public GitHub repository for PlanPal.
 - [ ] Register the PlanPal agent with ERC-8004 before the submission deadline.
-- [ ] Configure attribution tag `celo_e667c914009d` in every applicable Celo transaction before the first transaction.
+- [x] Configure the guarded direct-transaction wallet to apply attribution tag `celo_e667c914009d` to every applicable Celo transaction.
+- [ ] Fund and approve CELO gas for the existing PlanPal agent-key wallet before ERC-8004 registration.
 - [ ] Register the x402 seller PayTo address if PlanPal operates a paid endpoint.
 - [ ] Keep counted activity on Celo mainnet; clearly label any testnet-only development references.
-- [ ] Register PlanPal with Self Agent ID for the Self Agent ID track.
+- [x] Register PlanPal with Self Agent ID for the Self Agent ID track; mainnet Agent ID is `215`.
 - [ ] Keep the agent key and all payment/provider credentials server-side.
 
 ## Product experience

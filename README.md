@@ -20,7 +20,7 @@ PlanPal serves everyday people planning date nights, weekend adventures, birthda
 
 The landing page, responsive planner, documentation surface, backend procedures, database persistence, demo agent policy, and refinement flow are implemented. The planner UI calls typed tRPC procedures and stores plans, itinerary items, agent status snapshots, and payment receipts in the managed MySQL database.
 
-The current Self and x402 integrations are implemented behind explicit safety gates. Demo mode remains the default. Self mode can read the configured PlanPal agent from the Self registry or verify signed inbound requests, while x402 can construct and verify a Celo USDC payment and settle through the hosted facilitator. `ENABLE_LIVE_CELO_TX=false` keeps the live path disabled, so the normal prototype still returns receipts marked `provider: "demo"` and `liveTransaction: false`. Self registration, live x402 settlement, and ERC-8004 registration have not yet been completed.
+The current Self and x402 integrations are implemented behind explicit safety gates. PlanPal's existing agent key is verified on Celo mainnet as Self Agent ID `215`. Demo mode remains the default. Self mode can read the configured PlanPal agent from the Self registry or verify signed inbound requests, while x402 can construct and verify a Celo USDC payment and settle through the hosted facilitator. `ENABLE_LIVE_CELO_TX=false` keeps the live path disabled, so the normal prototype still returns receipts marked `provider: "demo"` and `liveTransaction: false`. ERC-8004 registration and live x402 settlement still require separate review and approval.
 
 ## Hackathon direction
 
@@ -30,7 +30,9 @@ PlanPal targets the **Self Agent ID: Verified Agent Payments** track. The projec
 celo_e667c914009d
 ```
 
-The Celo target is mainnet, chain ID `42220`. Live transaction execution remains disabled with:
+The existing PlanPal agent-key wallet is the intended ERC-8004 registration signer and must hold CELO for gas. Hosted x402 settlement is submitted and gas-funded by the facilitator, so PlanPal cannot currently append its own on-chain attribution suffix to that separate facilitator transaction.
+
+The Celo target is mainnet, chain ID `42220`. Every direct PlanPal Celo transaction must use the official attribution-tagged wallet client with the tag above. Live transaction execution remains disabled with:
 
 ```text
 ENABLE_LIVE_CELO_TX=false

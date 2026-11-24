@@ -10,8 +10,8 @@ Browser
 Express / tRPC server
   plan router -> orchestration service -> policy adapter
         |                       |
-        |                       +--> Self Agent ID boundary (demo today)
-        |                       +--> x402/Celo boundary (demo today)
+        |                       +--> Self Agent ID boundary (mainnet verified)
+        |                       +--> x402/Celo boundary (demo by default; hosted settlement guarded)
         v
 Drizzle ORM / MySQL
   plans, planItems, agentStatusSnapshots, paymentReceipts
@@ -51,4 +51,4 @@ When `DATABASE_URL` is unavailable, the service uses an in-memory map for local 
 
 ## Deployment and safety
 
-The project runs through the managed Webdev runtime on port 3000. Live Celo execution is gated by `ENABLE_LIVE_CELO_TX=false`. All future provider credentials must remain server-side and be requested through secure project configuration.
+The project runs through the managed Webdev runtime on port 3000. Direct Celo sends are routed through a guarded wallet client that applies the ERC-8021 attribution suffix `celo_e667c914009d` to every `sendTransaction` and `writeContract` call. The existing PlanPal agent-key wallet is the planned ERC-8004 registration wallet and must pay CELO gas. Live Celo execution is gated by `ENABLE_LIVE_CELO_TX=false`. Hosted x402 settlement is submitted and gas-funded by the facilitator, not by this wallet, and is not currently controllable for on-chain attribution. All provider credentials must remain server-side and be requested through secure project configuration.

@@ -4,11 +4,9 @@
 
 **Purpose:** establish that PlanPal is backed by a real human proof and, when applicable, verify signed inbound agent requests.
 
-**Implemented:** the official `@selfxyz/agent-sdk` is wired behind `PLANPAL_AGENT_POLICY_MODE=self`. The adapter can read PlanPal's own agent status from the Self Agent ID registry using the protected `AGENT_PRIVATE_KEY`, or verify `x-self-agent-*` request headers using the official verifier. Freshness, replay protection, registry status, Self proof provider, and sybil limits are enforced by the SDK.
+**Implemented:** the official `@selfxyz/agent-sdk` is wired behind `PLANPAL_AGENT_POLICY_MODE=self`. PlanPal's existing agent key is now registered and verified on Celo mainnet as **Self Agent ID `215`**. The adapter can read PlanPal's own agent status from the Self Agent ID registry using the protected `AGENT_PRIVATE_KEY`, or verify `x-self-agent-*` request headers using the official verifier. Freshness, replay protection, registry status, Self proof provider, and sybil limits are enforced by the SDK.
 
-**Staged network:** Celo Sepolia (`SELF_AGENT_NETWORK=testnet`) with `https://forno.celo-sepolia.celo-testnet.org`. Mainnet remains an explicit later choice.
-
-**Remaining:** complete Self registration through the Self app, confirm the agent is registered and fresh, then validate a signed request or own-agent registry read in the deployed environment. No passport data is stored by PlanPal.
+**Mainnet:** Celo mainnet (`SELF_AGENT_NETWORK=mainnet`), chain ID `42220`, with `https://forno.celo.org`. Testnet remains available only for mock-passport development. No passport data is stored by PlanPal.
 
 ## x402
 
@@ -24,13 +22,17 @@
 
 The target counted chain is Celo mainnet, chain ID `42220`, with RPC `https://forno.celo.org`. The registered attribution tag is `celo_e667c914009d`.
 
-The PlanPal x402 flow uses Celo's hosted facilitator. Current Celo x402 documentation notes that facilitator-side attribution tagging for x402 settlements is not live yet, so the attribution tag is retained in PlanPal's quote and receipt metadata but should not be represented as an on-chain x402 tag until the facilitator supports it. Any separate counted transaction builder must still apply the tag directly.
+PlanPal now includes a guarded wallet factory using Celo's official `@celo/attribution-tags` SDK. Every direct PlanPal `sendTransaction` or `writeContract` call must use that client, which appends the ERC-8021 suffix automatically. This covers the future ERC-8004 `register` and `setAgentURI` calls.
+
+The existing PlanPal agent key is the intended ERC-8004 registration signer and owner. Its wallet must be funded with enough **CELO for gas** before any approved registration transaction. The default fee currency is CELO; any alternative fee currency requires a separate review of the adapter address, balance, and exact transaction request. The gas fee is part of the tagged registration transaction; it is not a separate attribution transaction.
+
+The PlanPal x402 flow uses Celo's hosted facilitator. The buyer signs the payment authorization, but the facilitator submits the settlement transaction and pays its gas. Current Celo x402 documentation does not expose a PlanPal-controlled way to append our attribution suffix to that facilitator-submitted transaction. PlanPal therefore retains the attribution tag in quote and receipt metadata without falsely claiming that the hosted settlement is on-chain tagged. If the hackathon requires the x402 settlement itself to carry the tag, we must use a facilitator or settlement path that explicitly supports ERC-8021 before enabling live settlement.
 
 ## ERC-8004
 
-ERC-8004 registration is required by the hackathon for every entry. A non-published draft is in [`ERC8004_REGISTRATION.DRAFT.json`](./ERC8004_REGISTRATION.DRAFT.json). It intentionally has an empty `registrations` array because the final agent ID does not exist yet; the public endpoint and wallet still require review.
+ERC-8004 registration is required by the hackathon for every entry. A non-published draft is in [`ERC8004_REGISTRATION.DRAFT.json`](./ERC8004_REGISTRATION.DRAFT.json). It intentionally has an empty `registrations` array because the ERC-8004 identity registration has not yet been submitted; the stable endpoint, registration wallet, CELO gas balance, metadata URI, and exact tagged transaction still require review.
 
-The Celo mainnet Identity Registry is `0x8004A169FB4a3325136EB29fA0ceB6D2e539a432`. The safe sequence is: publish the reviewed file at a stable HTTPS or IPFS URI, simulate `register(agentURI)`, review the exact transaction and fee currency, submit only after explicit approval, read the `Registered` event from the mined receipt, then update the file with the resulting `agentId` and `agentRegistry` entry. If the URI changes after that update, call `setAgentURI` so the on-chain URI and file remain aligned. Self Agent ID's registry and ERC-8004's identity registry are separate deployments; the final submission must document both identities.
+The Celo mainnet Identity Registry is `0x8004A169FB4a3325136EB29fA0ceB6D2e539a432`. The safe sequence is: publish the reviewed file at a stable HTTPS or IPFS URI, simulate `register(agentURI)`, inspect the tagged calldata, signer, CELO gas estimate, fee currency, and destination, obtain explicit approval, submit through the guarded attributed wallet, read the `Registered` event from the mined receipt, then update the file with the resulting `agentId` and `agentRegistry` entry. If the URI changes after that update, call `setAgentURI` through the same tagged wallet so the on-chain URI and file remain aligned. Self Agent ID's registry and ERC-8004's identity registry are separate deployments; the final submission must document both identities.
 
 ## Recommendation providers
 
