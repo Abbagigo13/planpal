@@ -1,0 +1,20 @@
+{
+  "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+  "name": "PlanPal",
+  "description": "PlanPal is a human-backed AI concierge for budget-aware Saturday date-night plans. It turns a place, time, budget, and mood into a practical itinerary with timing, estimated costs, and easy refinements. Premium recommendation context is gated by Self Agent ID verification. Live x402 payment settlement is not enabled yet; the x402 flow is simulated.",
+  "image": "https://planpal-self.vercel.app/planpal-mark.svg",
+  "services": [
+    {
+      "name": "web",
+      "endpoint": "https://planpal-self.vercel.app/"
+    },
+    {
+      "name": "API",
+      "endpoint": "https://planpal-self.vercel.app/api/trpc"
+    }
+  ],
+  "x402Support": false,
+  "active": true,
+  "supportedTrust": ["reputation"],
+  "registrations": []
+}
