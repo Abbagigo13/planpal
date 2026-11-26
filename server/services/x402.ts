@@ -14,7 +14,7 @@ import {
 
 const CELO_USDC_ADDRESS = "0xcebA9300f2b948710d2653dD7B07f33A8B32118C" as const;
 const CELO_X402_FACILITATOR_URL = "https://api.x402.celo.org";
-const DEFAULT_RESOURCE_URL = "https://planpal.app/premium-recommendation";
+const DEFAULT_RESOURCE_URL = "https://planpal-self.vercel.app/api/trpc";
 
 type X402Provider = "demo" | "x402";
 
@@ -97,9 +97,20 @@ function maxAmountAtomicUsdc() {
 async function settleLiveCeloPayment(quote: X402Quote): Promise<X402Receipt> {
   assertLiveCeloTransactionsEnabled();
 
-  const privateKey = process.env.AGENT_PRIVATE_KEY ?? process.env.SELF_AGENT_PRIVATE_KEY;
+  // The buyer must be a different wallet from the PayTo (seller) wallet:
+  // Celo's facilitator refuses payments where payer and recipient are the same.
+  const privateKey =
+    process.env.X402_BUYER_PRIVATE_KEY ?? process.env.AGENT_PRIVATE_KEY ?? process.env.SELF_AGENT_PRIVATE_KEY;
   if (!privateKey) return makeLiveFailure(quote, "failed", "x402_buyer_key_missing");
   if (!isAddress(quote.payTo)) return makeLiveFailure(quote, "failed", "x402_payto_invalid");
+  try {
+    const buyer = privateKeyToAccount(privateKeyWithPrefix(privateKey) as `0x${string}`);
+    if (buyer.address.toLowerCase() === quote.payTo.toLowerCase()) {
+      return makeLiveFailure(quote, "failed", "x402_buyer_equals_payto");
+    }
+  } catch {
+    return makeLiveFailure(quote, "failed", "x402_buyer_key_invalid");
+  }
 
   const amount = BigInt(quote.amountCents) * 10_000n;
   if (amount <= 0n || amount > maxAmountAtomicUsdc()) {
