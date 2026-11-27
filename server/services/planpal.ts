@@ -3,6 +3,7 @@ import { getDb } from "../db";
 import { agentStatusSnapshots, paymentReceipts, planItems, plans } from "../../drizzle/schema";
 import { verifySelfAgentRequest, type AgentPolicyResult, type AgentRequest } from "./agent-policy";
 import { buildCeloPaymentRequest, settleCeloPayment, type X402Receipt } from "./x402";
+import { describeTravel, findPlaces, type Place, type PlacesLookup, type PlacesSelection } from "./places";
 
 export type PlanInput = {
   mission: "date_night" | "weekend_adventure" | "birthday_plan" | "food_crawl";
@@ -34,19 +35,93 @@ export type PlanResult = PlanInput & {
 
 const memoryPlans = new Map<string, PlanResult>();
 
-function makeItinerary(input: PlanInput, premium: boolean): PlanItemResult[] {
+const OSM_CREDIT = "Place data © OpenStreetMap contributors.";
+const ESTIMATE_NOTE = "Cost is an estimate from your budget; availability is not confirmed, so check with the venue.";
+
+function roundDollars(cents: number) {
+  return Math.round(cents / 100) * 100;
+}
+
+function kindLabel(place: Place) {
+  switch (place.kind) {
+    case "viewpoint": return "viewpoint";
+    case "park": return "green space";
+    case "restaurant": return "restaurant";
+    case "cafe": return "cafe";
+    case "theatre": return "theatre";
+    case "cinema": return "cinema";
+    case "arts_centre": return "arts centre";
+    case "bar": return "bar";
+    case "pub": return "pub";
+    case "nightclub": return "nightclub";
+  }
+}
+
+function placeArea(place: Place, fallback: string) {
+  return place.area ? `${place.area}, ${fallback}` : `Near ${fallback}`;
+}
+
+function withTravel(text: string, km: number | null) {
+  const travel = describeTravel(km);
+  return travel ? `${text} ${travel.charAt(0).toUpperCase()}${travel.slice(1)} from the previous stop.` : text;
+}
+
+function makeItinerary(input: PlanInput, premium: boolean, selection: PlacesSelection | null = null): PlanItemResult[] {
   const place = input.location.trim() || "your neighborhood";
   const fullPlan: PlanItemResult[] = [
     { startTime: "18:30", title: "Sunset walk", place: `${place} viewpoint`, detail: "A calm first stop to ease into the evening and leave room for a good conversation.", costCents: 0, link: null },
     { startTime: "20:00", title: "Dinner with a view", place: "A well-loved local table", detail: `A ${input.vibe.toLowerCase()} dinner stop selected to keep the evening inside your budget.`, costCents: 3400, link: null },
     { startTime: "21:45", title: "A little encore", place: "A nearby live spot", detail: "One last small moment of sparkle, with an easy exit if the night is already perfect.", costCents: 1200, link: null },
   ];
-  return premium ? fullPlan : fullPlan.slice(0, 1);
+  if (!premium) return fullPlan.slice(0, 1);
+  if (!selection) return fullPlan;
+
+  const generalNote = "No matching place was found nearby, so this is a general suggestion.";
+  const dinnerCost = roundDollars(input.budgetCents * 0.45);
+  const encoreCost = roundDollars(input.budgetCents * 0.2);
+
+  const walk: PlanItemResult = selection.walk
+    ? {
+        startTime: "18:30",
+        title: `Evening stroll at ${selection.walk.name}`,
+        place: placeArea(selection.walk, place),
+        detail: withTravel(`A ${kindLabel(selection.walk)} to ease into the evening. ${OSM_CREDIT}`, selection.legsKm.toWalk).replace("from the previous stop", "from the centre of your search"),
+        costCents: 0,
+        link: selection.walk.sourceUrl,
+      }
+    : { ...fullPlan[0], detail: `${fullPlan[0].detail} ${generalNote}` };
+
+  const dinner: PlanItemResult = selection.dinner
+    ? {
+        startTime: "20:00",
+        title: `Dinner at ${selection.dinner.name}`,
+        place: placeArea(selection.dinner, place),
+        detail: withTravel(
+          `A ${kindLabel(selection.dinner)}${selection.dinner.cuisine ? ` serving ${selection.dinner.cuisine}` : ""}. ${ESTIMATE_NOTE} ${OSM_CREDIT}`,
+          selection.legsKm.toDinner,
+        ),
+        costCents: dinnerCost,
+        link: selection.dinner.sourceUrl,
+      }
+    : { ...fullPlan[1], detail: `${fullPlan[1].detail} ${generalNote}` };
+
+  const encore: PlanItemResult = selection.encore
+    ? {
+        startTime: "21:45",
+        title: `A little encore at ${selection.encore.name}`,
+        place: placeArea(selection.encore, place),
+        detail: withTravel(`A ${kindLabel(selection.encore)} for one last stop. ${ESTIMATE_NOTE} ${OSM_CREDIT}`, selection.legsKm.toEncore),
+        costCents: encoreCost,
+        link: selection.encore.sourceUrl,
+      }
+    : { ...fullPlan[2], detail: `${fullPlan[2].detail} ${generalNote}` };
+
+  return [walk, dinner, encore];
 }
 
-function makeLimitedPayment(): X402Receipt {
+function makeLimitedPayment(failureCode = "premium_access_required"): X402Receipt {
   const quote = buildCeloPaymentRequest("limited", 0);
-  return { ...quote, status: "skipped", provider: "demo", transactionHash: null, liveTransaction: false, settledAt: null, failureCode: "premium_access_required" };
+  return { ...quote, status: "skipped", provider: "demo", transactionHash: null, liveTransaction: false, settledAt: null, failureCode };
 }
 
 async function persistPlan(result: PlanResult, ownerUserId?: number) {
@@ -137,18 +212,31 @@ async function persistRefinement(result: PlanResult) {
 export async function createPlan(input: PlanInput, ownerUserId?: number, request?: AgentRequest): Promise<PlanResult> {
   const id = crypto.randomUUID();
   const agent = await verifySelfAgentRequest(request);
-  const payment = agent.premiumEligible
-    ? await settleCeloPayment(id, buildCeloPaymentRequest(id))
-    : makeLimitedPayment();
+
+  // Look up real places first (free), so we only charge when we can deliver them.
+  const places: PlacesLookup = agent.premiumEligible ? await findPlaces(input) : { status: "disabled" };
+  const liveDataUnavailable = places.status === "unavailable";
+
+  const payment = !agent.premiumEligible
+    ? makeLimitedPayment()
+    : liveDataUnavailable
+      ? makeLimitedPayment("live_data_unavailable")
+      : await settleCeloPayment(id, buildCeloPaymentRequest(id));
   const premium = agent.premiumEligible && payment.status === "settled";
-  const items = makeItinerary(input, premium);
+  const items = makeItinerary(input, premium, places.status === "ok" ? places.selection : null);
+  if (liveDataUnavailable && items[0]) {
+    items[0] = {
+      ...items[0],
+      detail: "Live place data is unavailable right now, so PlanPal did not charge for premium details. Please try again in a moment.",
+    };
+  }
   const totalCents = items.reduce((sum, item) => sum + item.costCents, 0);
   const result: PlanResult = {
     ...input,
     id,
     status: premium ? "ready" : "limited",
     accessTier: premium ? "premium" : "limited",
-    title: premium ? "Golden hour to goodnight" : "A gentle first step",
+    title: premium ? "Golden hour to goodnight" : liveDataUnavailable ? "Live details are unavailable right now" : "A gentle first step",
     totalCents,
     items,
     agent,
